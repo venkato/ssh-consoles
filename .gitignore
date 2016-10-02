@@ -1,0 +1,15 @@
+/classpath.txt
+/.classpath
+/bin/
+/logs/
+/classpath.groovy
+/sshtool.jar
+/password.txt
+/build/
+
+
+.project
+.classpath
+.settings/
+.gradle/
+*.iml
