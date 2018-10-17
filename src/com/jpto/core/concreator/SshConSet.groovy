@@ -1,6 +1,7 @@
 package com.jpto.core.concreator
 
 import com.jcraft.jsch.Session
+import net.sf.jremoterun.utilities.nonjdk.sshsup.JrrJschSession
 import net.sf.jremoterun.utilities.nonjdk.sshsup.SftpUtils
 import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConSet3
 import groovy.transform.CompileStatic
@@ -65,23 +66,26 @@ class SshConSet extends SshConSet3 implements Closeable {
     }
 
     JptoJSchShellTtyConnector createJcraftConnection() {
+        createJcraftConnection2(true)
+    }
+
+    JptoJSchShellTtyConnector createJcraftConnection2(boolean doIsConnectedCheck) {
         if (jcraftConn != null) {
             return jcraftConn;
         }
         if (sshKey != null) {
             assert sshKey.exists()
         } else {
-            assert password != null
+            if(password==null) {
+                throw new Exception("set password or public key")
+            }
         }
         assert host != null
         SshConSet thisObj = this;
         JptoJSchShellTtyConnector connector = new JptoJSchShellTtyConnector(thisObj);
         JptoAddHostPanel2.createTerminalImpl3(connector);
-        if (!connector.initDone) {
-            StackTraceElement[] trace = connector.connectingThread.getStackTrace()
-            trace.toList().each {println(it)}
-            log.info("Logon failed, for details change ssh log level : SshSettings.logLevel");
-            throw new Exception("Ssh connection failed to initialized");
+        if (doIsConnectedCheck&& !connector.initDone) {
+            connector.checkIfConnected()
         }
         jcraftConn = connector
         return connector
