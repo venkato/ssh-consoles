@@ -5,8 +5,9 @@ import javassist.CtClass
 import javassist.CtConstructor
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.groovystarter.st.JdkLogFormatter
-import net.sf.jremoterun.utilities.javassist.JrrJavassistUtils
+import net.sf.jremoterun.utilities.nonjdk.javassist.JrrJavassistUtils
 import org.junit.Test;
+import com.jpto.redefine.Terminal3Redefine;
 
 import java.util.logging.Logger;
 import groovy.transform.CompileStatic;
@@ -31,12 +32,15 @@ class TerminalRedefine {
 
         }else {
             Terminal3Redefine.redefine3()
-//            Class clazz = JediTermWidget
-//            CtClass ctClazz = JrrJavassistUtils.getClassFromDefaultPool(clazz)
-//            CtConstructor constructor = JrrJavassistUtils.findConstructor(ctClazz, 3);
-//            log.info "${constructor.getParameterTypes()}"
-//            constructor.instrument(new JptoTerminalExprEditor())
-//            JrrJavassistUtils.redefineClass(ctClazz, clazz)
+            Class clazz = JediTermWidget
+            CtClass ctClazz = JrrJavassistUtils.getClassFromDefaultPool(clazz)
+            CtConstructor constructor = JrrJavassistUtils.findConstructorByCount(clazz, ctClazz, 3);
+            log.info "${constructor.getParameterTypes()}"
+            JptoTerminalExprEditor jptoTerminalExprEditor = new JptoTerminalExprEditor()
+            constructor.instrument(jptoTerminalExprEditor)
+            assert jptoTerminalExprEditor.terminalTextBufferRedified
+            JrrJavassistUtils.redefineClass(ctClazz, clazz)
+            inited = true
         }
     }
 

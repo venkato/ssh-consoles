@@ -9,11 +9,12 @@ import com.jpto.settings.SshSettings
 import groovy.transform.CompileStatic
 import net.infonode.docking.TabWindow
 import net.infonode.docking.View
-import net.sf.jremoterun.utilities.JrrUtilities
+import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwActions
+import net.sf.jremoterun.utilities.nonjdk.idwutils.ViewAndPanel
+import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConnectionDetailsI
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtils
-import org.apache.commons.lang.StringUtils
-import org.apache.log4j.Logger
+
 
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JButton
@@ -24,11 +25,13 @@ import javax.swing.KeyStroke
 import java.awt.FlowLayout
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
+import java.util.logging.Logger
 
 @CompileStatic
 public class JptoAddHostPanel {
-    private static final Logger logger = Logger.getLogger(JptoAddHostPanel);
-    private static final Logger log = logger;
+    private static final Logger log = JrrClassUtils.getJdkLogForCurrentClass();
+    private static final Logger logger = log;
+
 
     public static KeyStroke detailedEditorShortCut = KeyStroke.getKeyStroke(KeyEvent.VK_SPACE,
             InputEvent.CTRL_DOWN_MASK);
@@ -60,11 +63,19 @@ public class JptoAddHostPanel {
     }
 
 
-    public static View getAddHostPanelView() {
+    /**
+     * @return panel with FlowLayout
+     */
+    static ViewAndPanel getAddHostPanelView2() {
         JPanel panel = JptoAddHostPanel.getAddHostPanel();
-        View addHostView = new View("Add host", null, panel);
-        JrrSwingUtils.tranferFocus(addHostView, panel)
-        return addHostView
+        ViewAndPanel viewAndPanel = new ViewAndPanel("Add host",panel)
+        JrrSwingUtils.tranferFocus(viewAndPanel.view, panel)
+        return viewAndPanel
+    }
+
+    @Deprecated
+    static View getAddHostPanelView() {
+        return getAddHostPanelView2().view
     }
 
     public static JPanel getAddHostPanel() {
@@ -78,13 +89,12 @@ public class JptoAddHostPanel {
         addHost.addActionListener {
             View createTerminalVar;
             try {
-                SshConSet sshConSet = new SshConSet()
-                sshConSet.host = textField.getText()
-                createTerminalVar = createTerminal(sshConSet);
-                tabWindow.addTab(createTerminalVar);
+//                SshConSet sshConSet = new SshConSet()
+//                sshConSet.host = textField.getText()
+                SshSettings.customFunctions.createSshConnectionFromSidePanelAndAddToTab(textField.getText())
             } catch (Exception e1) {
                 log.warn(null, e1);
-                JrrUtilities.showException("can't connect to " + textField.getText(), e1);
+                net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("can't connect to " + textField.getText(), e1);
             }
         };
         panel.add(hosts)
@@ -100,7 +110,7 @@ public class JptoAddHostPanel {
                 tabWindow.addTab(createTerminalVar);
             } catch (Exception e1) {
                 log.warn(null, e1);
-                JrrUtilities.showException("can't connect to " + textField.getText(), e1);
+                net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("can't connect to " + textField.getText(), e1);
             }
         };
 
@@ -112,8 +122,12 @@ public class JptoAddHostPanel {
     }
 
 
-    static JptoSshJediTermWidget createTerminalImpl(SshConSet host, boolean throwEx) throws Exception {
-        host.host = StringUtils.strip(host.host, "\t\r\n ");
+//    static JptoSshJediTermWidget createTerminalImpl(SshConSet host, boolean throwEx) throws Exception {
+//        host.host = StringUtils.strip(host.host, "\t\r\n ");
+//        return createTerminalImpl((SshConSet2I)host,throwEx)
+//    }
+
+    static JptoSshJediTermWidget createTerminalImpl(SshConnectionDetailsI host, boolean throwEx) throws Exception {
         JptoJSchShellTtyConnector jSchShellTtyConnector = SshSettings.customFunctions.buildJSchShellTtyConnector(host);
         return createTerminalImpl2(jSchShellTtyConnector, throwEx)
     }
@@ -149,7 +163,8 @@ public class JptoAddHostPanel {
         return jediTermWidget;
     }
 
-    public static View createTerminal(SshConSet host) throws Exception {
+    @Deprecated
+    public static View createTerminal(SshConnectionDetailsI host) throws Exception {
         return SshSettings.customFunctions.createTerminal(host);
     }
 

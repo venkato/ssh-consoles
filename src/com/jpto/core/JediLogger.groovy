@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 import org.apache.log4j.Logger
 
 @CompileStatic
-class JediLogger extends Logger {
+class JediLogger extends org.apache.log4j.Logger {
 
 
     final Logger nativeLogger;
