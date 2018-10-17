@@ -3,15 +3,18 @@ package com.jpto.empty
 import com.jpto.core.JptoSshConsoles
 import com.jpto.settings.SshSettings
 import groovy.transform.CompileStatic
+import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.classpath.MavenDefaultSettings
 import net.sf.jremoterun.utilities.groovystarter.GroovyMethodRunnerParams
 import net.sf.jremoterun.utilities.nonjdk.InitGeneral
-import org.apache.log4j.Logger
+
+import java.util.logging.Logger
+
 
 @CompileStatic
 public class SshEmptyLauncher implements Runnable{
-    private static final Logger logger = Logger.getLogger(SshEmptyLauncher);
-    private static final Logger log = logger;
+    private static final Logger log = JrrClassUtils.getJdkLogForCurrentClass();
+
 
     public static void main(String[] args) throws Exception {
         File userHome = System.getProperty('user.home') as File
@@ -24,6 +27,8 @@ public class SshEmptyLauncher implements Runnable{
         InitGeneral.init1();
         SshSettings.customFunctions = new CustomFunctionsEmpty();
         JptoSshConsoles.launchCore();
+
+        Thread.sleep(Long.MAX_VALUE);
     }
 
     static void addGrToPath(){
@@ -34,7 +39,7 @@ public class SshEmptyLauncher implements Runnable{
             log.info "failed find env var : ${pathId}"
         }else {
 
-            File grRunner = new File(GroovyMethodRunnerParams.instance.grHome, 'firstdownload')
+            File grRunner = new File(GroovyMethodRunnerParams.gmrpn.grHome, 'firstdownload')
             assert grRunner.exists()
             grRunner = grRunner.canonicalFile
 
