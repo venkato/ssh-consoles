@@ -9,6 +9,7 @@ import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.InfocationFrameworkStructure
 import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaJavaEditor
 import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaRunnerWithStackTrace2
+import net.sf.jremoterun.utilities.nonjdk.shell.GroovySehllSshServiceSettings
 import net.sf.jremoterun.utilities.nonjdk.tcpmon.Tcpmon
 import net.sf.jremoterun.utilities.nonjdk.tcpmon.webclient.WebClient
 import net.sf.jremoterun.utilities.nonjdk.vncviewer.VncViewer
@@ -22,6 +23,9 @@ import org.apache.sshd.server.scp.ScpCommandFactory
 import org.apache.sshd.server.session.ServerSession
 import org.apache.sshd.server.shell.ProcessShellFactory
 
+import javax.swing.SwingUtilities
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.logging.Logger
 
 @CompileStatic
@@ -59,9 +63,12 @@ class AddHostFunctions {
     }
 
     View addHost(SshConSet sshConSet) {
-        JptoJSchShellTtyConnector connection = sshConSet.createJcraftConnection()
+        JptoJSchShellTtyConnector connection = sshConSet.createJcraftConnection2(false)
         View view = SshSettings.customFunctions.createTerminal2(connection)
-        JptoAddHostPanel.tabWindow.addTab(view)
+        SwingUtilities.invokeLater {
+            JptoAddHostPanel.tabWindow.addTab(view)
+        }
+        connection.checkIfConnected()
         return view
     }
 
@@ -109,12 +116,16 @@ class AddHostFunctions {
 //    }
 
     SshServer runSshServer(int port,List<String> shell){
+        GroovySehllSshServiceSettings.setSshProps()
         SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.port = port
         File hostKey = new File(SystemUtils.userHome, "jrr/hostkey.ser")
         hostKey.parentFile.mkdir()
         assert hostKey.parentFile.exists()
-        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey));
-        sshd.setShellFactory(new ProcessShellFactory(shell));
+        Path hostKeyP = Paths.get(hostKey.toURI())
+        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKeyP));
+        String[] shell2 = shell.toArray(new String[0])
+        sshd.setShellFactory(new ProcessShellFactory(shell2));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setPasswordAuthenticator(new PasswordAuthenticator(){
             @Override

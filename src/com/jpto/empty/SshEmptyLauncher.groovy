@@ -24,6 +24,8 @@ public class SshEmptyLauncher implements Runnable{
         InitGeneral.init1();
         SshSettings.customFunctions = new CustomFunctionsEmpty();
         JptoSshConsoles.launchCore();
+
+        Thread.sleep(Long.MAX_VALUE);
     }
 
     static void addGrToPath(){

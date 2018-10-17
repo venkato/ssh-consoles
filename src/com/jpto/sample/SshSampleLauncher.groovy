@@ -19,8 +19,11 @@ public class SshSampleLauncher {
     }
 
     static void launch() {
+        net.sf.jremoterun.utilities.java11.Java11ModuleSetDisable.doIfNeeded();
         net.sf.jremoterun.utilities.nonjdk.InitGeneral.init1();
         SshSettings.customFunctions = new CustomFunctionsSample();
         JptoSshConsoles.launchCore();
+
+        Thread.sleep(Long.MAX_VALUE);
     }
 }

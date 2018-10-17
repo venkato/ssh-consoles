@@ -21,6 +21,7 @@ public class JptoSshJediTermWidget extends JptoCommonJediTermWidget {
 	public JptoSshJediTermWidget(SettingsProvider settingsProvider, JptoJSchShellTtyConnector jSchShellTtyConnector) {
 		super(settingsProvider);
 		this.jSchShellTtyConnector = jSchShellTtyConnector;
+		jSchShellTtyConnector.jediSshWidget = this
 	}
 
 	@Override

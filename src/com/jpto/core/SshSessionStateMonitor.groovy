@@ -4,8 +4,9 @@ import com.jpto.core.concreator.JptoSshJediTermWidget
 import net.infonode.docking.View
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.idwutils.MyDockingWindowTitleProvider
-import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent;
+import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent
 
+import javax.swing.SwingUtilities;
 import java.util.logging.Logger;
 import groovy.transform.CompileStatic;
 
@@ -55,7 +56,7 @@ class SshSessionStateMonitor implements Runnable{
     }
 
     void checkSessions(){
-        sshSessions.keySet().each {
+        new ArrayList<JptoSshJediTermWidget>(sshSessions.keySet()).each {
             checkSession(it)
         }
     }
@@ -68,8 +69,10 @@ class SshSessionStateMonitor implements Runnable{
                     log.info("session is dead ${it.jSchShellTtyConnector.host}")
                     View parentWindow = JrrSwingUtilsParent.findParentWindow(it, View)
                     if (parentWindow != null) {
-                        MyDockingWindowTitleProvider titleProvider = new MyDockingWindowTitleProvider(parentWindow.getTitle() + ' dead');
-                        parentWindow.getWindowProperties().setTitleProvider(titleProvider)
+                        SwingUtilities.invokeLater {
+                            MyDockingWindowTitleProvider titleProvider = new MyDockingWindowTitleProvider(parentWindow.getTitle() + ' dead');
+                            parentWindow.getWindowProperties().setTitleProvider(titleProvider)
+                        }
                     } else {
                         log.info "can't find parent window for ${it.jSchShellTtyConnector.host}"
                     }

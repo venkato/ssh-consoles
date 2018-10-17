@@ -31,7 +31,6 @@ public class JptoJediSettings implements SettingsProvider {
 
     public javax.swing.KeyStroke[] getPasteKeyStrokes() {
         javax.swing.KeyStroke[] ks = [
-                KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK),
                 KeyStroke.getKeyStroke(KeyEvent.VK_INSERT, InputEvent.SHIFT_DOWN_MASK)]
         return ks;
     }
@@ -83,11 +82,13 @@ public class JptoJediSettings implements SettingsProvider {
                 , KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
     }
 
+
     @Override
     public KeyStroke[] getCopyKeyStrokes() {
         return createKs(
                 KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.META_DOWN_MASK)
                 // CTRL + C is used for signal; use CTRL + SHIFT + C instead
+                // see https://www.in-ulm.de/~mascheck/various/ascii-tty/
                 , KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
     }
 

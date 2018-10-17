@@ -10,6 +10,8 @@ import net.infonode.docking.SplitWindow
 import net.infonode.docking.TabWindow
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.UrlToFileConverter
+import net.sf.jremoterun.utilities.nonjdk.BaseDirSetting
+import net.sf.jremoterun.utilities.nonjdk.FileUtilsJrr
 import net.sf.jremoterun.utilities.nonjdk.downloadutils.WinptyDownloader
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils
 import org.apache.commons.io.FileUtils
@@ -33,14 +35,15 @@ public class CustomFunctionsSample extends JptoCustomFunctions {
         TabWindow tabWindowButtom = new TabWindow();
         SplitWindow splitWindow = new SplitWindow(false, 0.5f, tabWindowUp, tabWindowButtom);
         tabWindowUp.addTab(JptoAddHostPanel.getAddHostPanelView());
-        File userHome = System.getProperty('user.home') as File
-        File addHost = new File("${userHome}/jrr/configs/addhost.groovy")
+        //File userHome = System.getProperty('user.home') as File
+        //File addHost = new File("${userHome}/jrr/configs/addhost.groovy")
+        File addHost =  BaseDirSetting.baseDirSetting.childL("configs/addhost.groovy").resolveToFile()
         if (true) {
             File f = UrlToFileConverter.c.convert JrrClassUtils.currentClassLoader.getResource('ssh_icon.png')
             File f2 = f.parentFile.parentFile
             File tempate = new File(f2,"addhost-template.groovy");
             assert tempate.exists()
-            FileUtils.copyFile(tempate, addHost)
+            FileUtilsJrr.copyFile(tempate, addHost)
         }
         SplitWindow panel3 = new AddHostRunner(addHost).mainPanel3;
         IdwUtils.setTitle(panel3, 'Add host2')

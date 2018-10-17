@@ -99,7 +99,7 @@ class JptoCommonJediTermWidget extends JediTermWidget {
 
     void showFindText2(){
         JPanel seachPanel= searchComponntField.get(this) as JPanel;
-        log.info("cp ${seachPanel == null}")
+        //log.info("cp ${seachPanel == null}")
         if(seachPanel ==null){
             showFindComponentMethod.invoke(this)
         }else{

@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 @CompileStatic
 public class JscpLogger implements com.jcraft.jsch.Logger {
 
-	private int enabledLogger = WARN;
+	public int enabledLogger = WARN;
 
 	public static Level[] levelsMapping = new Level[5];
 
@@ -21,6 +21,7 @@ public class JscpLogger implements com.jcraft.jsch.Logger {
 		levelsMapping[WARN] = Level.WARN;
 		levelsMapping[ERROR] = Level.ERROR;
 		levelsMapping[FATAL] = Level.FATAL;
+		JrrClassUtils.addIgnoreClass(JscpLogger)
 	}
 
 	public JscpLogger(int enabledLogger) {

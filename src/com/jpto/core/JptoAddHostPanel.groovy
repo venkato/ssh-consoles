@@ -11,6 +11,7 @@ import net.infonode.docking.TabWindow
 import net.infonode.docking.View
 import net.sf.jremoterun.utilities.JrrUtilities
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwActions
+import net.sf.jremoterun.utilities.nonjdk.idwutils.ViewAndPanel
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtils
 import org.apache.commons.lang.StringUtils
 import org.apache.log4j.Logger
@@ -60,11 +61,19 @@ public class JptoAddHostPanel {
     }
 
 
-    public static View getAddHostPanelView() {
+    /**
+     * @return panel with FlowLayout
+     */
+    static ViewAndPanel getAddHostPanelView2() {
         JPanel panel = JptoAddHostPanel.getAddHostPanel();
-        View addHostView = new View("Add host", null, panel);
-        JrrSwingUtils.tranferFocus(addHostView, panel)
-        return addHostView
+        ViewAndPanel viewAndPanel = new ViewAndPanel("Add host",panel)
+        JrrSwingUtils.tranferFocus(viewAndPanel.view, panel)
+        return viewAndPanel
+    }
+
+    @Deprecated
+    static View getAddHostPanelView() {
+        return getAddHostPanelView2().view
     }
 
     public static JPanel getAddHostPanel() {

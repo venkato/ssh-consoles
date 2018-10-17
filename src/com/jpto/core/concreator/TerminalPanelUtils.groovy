@@ -17,24 +17,24 @@ class TerminalPanelUtils {
      * 1 means last line
      */
     static TerminalLine getLineFromEnd(TerminalPanel terminalPanel, int lineFromEnd) {
-        assert lineFromEnd > 0
+        assert lineFromEnd > 0 // TODO should be 1 here ?
         TerminalTextBuffer textBuffer = terminalPanel.getTerminalTextBuffer();
         int count = textBuffer.getScreenLinesCount();
-        int height = textBuffer.getHeight()
+        int height = textBuffer.getHeight();
         if (count == 0) {
-            log.info "no lines on screen"
+            log.info "no lines on screen";
             return null;
         }
         if (count != height) {
-            log.info "count != height : ${count} != ${height}"
+            log.info "count != height : ${count} != ${height}";
             count = Math.min(count, height);
         }
         if (count <= 0) {
-            log.info "count is starnge : ${count}"
+            log.info "count is starnge : ${count}";
             return null;
         }
-        int linenn = count - lineFromEnd
-        TerminalLine line = textBuffer.getLine(linenn)
+        int linenn = count - lineFromEnd;
+        TerminalLine line = textBuffer.getLine(linenn);
         return line
     }
 

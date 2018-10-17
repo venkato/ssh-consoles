@@ -22,6 +22,7 @@ import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwMoveToNewTab
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwPopupMenuFactory
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwShortcuts
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils
+import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils2
 import net.sf.jremoterun.utilities.nonjdk.mucom.OpenFolderInMuCommander
 import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConSet2
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent
@@ -42,6 +43,7 @@ import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.Frame
 import java.awt.Window
+import java.awt.datatransfer.StringSelection
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 
@@ -123,8 +125,11 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         getActions3(actionsAuu3)
         getActions4(actionsAuu3)
         getActions5(actionsAuu3)
+        getActions6(actionsAuu3)
         getActionsOpenInMuCommander(actionsAuu3)
+        getActionsOpenSedTester(actionsAuu3)
         getChangeFont(actionsAuu3)
+        getActionsMethodInfo(actionsAuu3)
         return actionsAuu3
 
     }
@@ -220,8 +225,32 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     }
 
+    @Deprecated
     void getActions4(ArrayList<TerminalAction> actions) {
+        getActionsPassword(actions)
+    }
 
+    void getActionsPassword(ArrayList<TerminalAction> actions) {
+
+
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.myPassword,
+                { Component input ->
+                    if (input == null) {
+                        log.error("input is null");
+                        return false;
+                    }
+                    JptoTerminalPanel component = (JptoTerminalPanel) input;
+                    JediTermWidget jedi = (JediTermWidget) component.getParent().getParent();
+                    TtyConnector ttyConnector = jedi.getTtyConnector();
+                    if (SshConSet2.defaultPassword == null) {
+                        throw new IllegalStateException("Password not set")
+                    }
+                    ttyConnector.write(SshConSet2.defaultPassword);
+                    return true;
+                }));
+    }
+
+    void getActions6(ArrayList<TerminalAction> actions) {
 
         actions.add(new JptoTerminalAction(IdwShortcuts.moveToDialog
                 , { Component input ->
@@ -258,22 +287,18 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
                     }
 
                 }));
-
-        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.myPassword,
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.copyAll,
                 { Component input ->
                     if (input == null) {
                         log.error("input is null");
                         return false;
                     }
                     JptoTerminalPanel component = (JptoTerminalPanel) input;
-                    JediTermWidget jedi = (JediTermWidget) component.getParent().getParent();
-                    TtyConnector ttyConnector = jedi.getTtyConnector();
-                    if (SshConSet2.defaultPassword == null) {
-                        throw new IllegalStateException("Password not set")
-                    }
-                    ttyConnector.write(SshConSet2.defaultPassword);
+                    String withHistory = component.getScreenWithHistory()
+                    component.createCopyPasteHandler().setContents(withHistory, true)
                     return true;
                 }));
+
 
     }
 
@@ -309,7 +334,7 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         if (OpenFolderInMuCommander.openFolderInMuCommander != null) {
             actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.openInMuCommander, { Component component ->
 
-                log.info "duplicated called ${component.class.name}"
+                //log.info "duplicated called ${component.class.name}"
                 if (component instanceof JptoTerminalPanel) {
                     Container parent = component.getParent().getParent()
                     JptoTerminalPanel term = (JptoTerminalPanel) component;
@@ -325,9 +350,59 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     }
 
+    void getActionsOpenSedTester(ArrayList<TerminalAction> actions) {
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.sedView, { Component component ->
+
+            //log.info "duplicated called ${component.class.name}"
+            if (component instanceof JptoTerminalPanel) {
+                Container parent = component.getParent().getParent()
+                JptoTerminalPanel term = (JptoTerminalPanel) component;
+                //if (parent instanceof JptoSshJediTermWidget) {
+                openInSedViewer(term)
+                return true;
+                //}
+            }
+            return false;
+        }));
+
+    }
+
+    void getActionsMethodInfo(ArrayList<TerminalAction> actions) {
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.methodInfo, { Component component ->
+
+            //log.info "duplicated called ${component.class.name}"
+            if (component instanceof JptoTerminalPanel) {
+                Container parent = component.getParent().getParent()
+                JptoTerminalPanel term = (JptoTerminalPanel) component;
+                //if (parent instanceof JptoSshJediTermWidget) {
+                openMethodInfo(term)
+                return true;
+                //}
+            }
+            return false;
+        }));
+
+    }
+
+    void openMethodInfo(JptoTerminalPanel term) {
+        //duplicateSshConsole(term, sshWi)
+
+        if (term.jptoMethodInfo == null ||term.jptoMethodInfo.view.getWindowParent()==null) {
+            TabWindow parentTabWindow = IdwUtils.getOppositeSplitTab(IdwUtils.getDockerWindowWithPopmenu(term));
+            term.jptoMethodInfo = new JptoMethodInfo(term)
+            parentTabWindow.addTab(term.jptoMethodInfo.view);
+        }else {
+            IdwUtils.setVisible(term.jptoMethodInfo.view)
+        }
+
+        term.jptoMethodInfo.buildAssist()
+
+
+    }
+
     void getChangeFont(ArrayList<TerminalAction> actions) {
         actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.changeFont, { Component component ->
-            log.info "select font called ${component.class.name}"
+            log.info "select font called ${component.getClass().getName()}"
             if (component instanceof JptoTerminalPanel) {
                 Container parent = component.getParent().getParent()
                 JptoTerminalPanel term = (JptoTerminalPanel) component;
@@ -349,6 +424,14 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
             return false;
 
         }));
+
+    }
+
+    void openInSedViewer(JptoTerminalPanel term) {
+        //duplicateSshConsole(term, sshWi)
+        TabWindow parentTabWindow = IdwUtils.getOppositeSplitTab(IdwUtils.getDockerWindowWithPopmenu(term));
+        SedViewer sedViewer = new SedViewer(term)
+        parentTabWindow.addTab(sedViewer.view);
 
     }
 
@@ -395,12 +478,12 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
             throw new RuntimeException("bad cursor : " + cursor2)
         }
         TerminalLine n2 = textBuffer.getLine(cursor2 - 2)
+        TerminalLine n1 = textBuffer.getLine(cursor2 - 1)
+        String n1t = n1.getText()
 
         String n2t = n2.getText()
         log.info "n2t = ${n2t}"
         if (n2t.endsWith('pwd')) {
-            TerminalLine n1 = textBuffer.getLine(cursor2 - 1)
-            String n1t = n1.getText()
             log.info "n1t = ${n1t}"
             return n1t
         }
@@ -408,6 +491,9 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         String n3t = n3.getText()
         log.info "n3t = ${n3t}"
         if (n3t.endsWith('pwd')) {
+            if(n2.isWrapped()){
+                n2t+=n1t
+            }
             return n2t
         }
         throw new Exception("not found ${n3t} , ${n2t} ")

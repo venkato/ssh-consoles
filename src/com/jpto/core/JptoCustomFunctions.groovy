@@ -13,6 +13,8 @@ import net.infonode.docking.View
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.JrrUtilities
 import net.sf.jremoterun.utilities.nonjdk.downloadutils.LessDownloader
+import net.sf.jremoterun.utilities.nonjdk.sshsup.ConnectionState
+import net.sf.jremoterun.utilities.nonjdk.sshsup.JrrJschSession
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtils
 import org.apache.commons.lang.StringUtils
 import org.apache.log4j.Logger
@@ -81,16 +83,24 @@ public abstract class JptoCustomFunctions {
 
     View createTerminal2(JptoJSchShellTtyConnector jSchShellTtyConnector) throws Exception {
         JptoSshJediTermWidget jediTermWidget = JptoAddHostPanel.createTerminalImpl2(jSchShellTtyConnector, false);
-        if (jediTermWidget.jSchShellTtyConnector.initDone) {
+        boolean authOk = false;
+        Session session = jSchShellTtyConnector.getSession()
+        if (session instanceof JrrJschSession) {
+            JrrJschSession session3 = (JrrJschSession) session;
+            authOk=( session3.connectionState == ConnectionState.AuthPassed)
+        };
+
+        if (authOk && jediTermWidget.jSchShellTtyConnector.initDone  ) {
             Thread.sleep(500);
             SwingUtilities.invokeLater {
                 TerminalPanel terminalPanel = jediTermWidget.getTerminalPanel();
-                try {
-                    JrrClassUtils.invokeJavaMethod(terminalPanel, "clearBuffer");
-                } catch (Exception e) {
-                    log.warn(null, e);
-                    JrrUtilities.showException("e", e);
-                }
+                terminalPanel.clearBuffer()
+//                try {
+//                    JrrClassUtils.invokeJavaMethod(terminalPanel, "clearBuffer");
+//                } catch (Exception e) {
+//                    log.warn(null, e);
+//                    JrrUtilities.showException("e", e);
+//                }
             }
         }
         View view = new View(deriveViewTitle(jSchShellTtyConnector), null, jediTermWidget) {
@@ -121,6 +131,11 @@ public abstract class JptoCustomFunctions {
 
     public View createPtyTerminal(File dir, List<String> cmd) throws Exception {
         createPtyTerminal(cmd[0], dir, cmd)
+    }
+
+
+    public View createPtyTerminalLogViewer(LogViewerI logViewerI) throws Exception {
+        createPtyTerminalLogViewer(logViewerI.name(),logViewerI.file);
     }
 
     public View createPtyTerminalLogViewer(String viewName, File logFile) throws Exception {
