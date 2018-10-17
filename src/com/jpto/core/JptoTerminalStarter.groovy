@@ -7,7 +7,10 @@ import com.jediterm.terminal.TerminalStarter
 // import com.jediterm.terminal.TtyChannel
 import com.jediterm.terminal.TtyConnector
 import com.jediterm.terminal.emulator.JediEmulator;
-import net.sf.jremoterun.utilities.JrrClassUtils;
+import net.sf.jremoterun.utilities.JrrClassUtils
+
+import javax.swing.JOptionPane
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import groovy.transform.CompileStatic;
 
@@ -36,4 +39,22 @@ class JptoTerminalStarter extends TerminalStarter{
     String toString() {
         return "JptoTerminalStarter : ${ttyConnector}"
     }
+
+    @Override
+    void sendString(String selection) {
+        sendStringSuper(selection)
+//        if (selection != null) {
+//            try {
+//                pasteFromClipboard2(selection)
+//            } catch (Exception e) {
+//                log.info2(e);
+//            }
+//        }
+
+    }
+
+    void sendStringSuper(String str){
+        super.sendString(str)
+    }
+
 }
