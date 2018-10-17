@@ -1,11 +1,13 @@
 package com.jpto.core
 
 import com.jpto.core.concreator.JptoSshJediTermWidget
+import com.jpto.settings.SshSettings
 import net.infonode.docking.View
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.idwutils.MyDockingWindowTitleProvider
-import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent;
+import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent
 
+import javax.swing.SwingUtilities;
 import java.util.logging.Logger;
 import groovy.transform.CompileStatic;
 
@@ -55,25 +57,36 @@ class SshSessionStateMonitor implements Runnable{
     }
 
     void checkSessions(){
-        sshSessions.keySet().each {
+        new ArrayList<JptoSshJediTermWidget>(sshSessions.keySet()).each {
             checkSession(it)
         }
     }
 
 
-    void checkSession(JptoSshJediTermWidget it){
-        if(it.jSchShellTtyConnector.initDone) {
-            if (!it.jSchShellTtyConnector.sessionDead) {
-                if (!it.jSchShellTtyConnector.isConnected()) {
-                    log.info("session is dead ${it.jSchShellTtyConnector.host}")
-                    View parentWindow = JrrSwingUtilsParent.findParentWindow(it, View)
-                    if (parentWindow != null) {
-                        MyDockingWindowTitleProvider titleProvider = new MyDockingWindowTitleProvider(parentWindow.getTitle() + ' dead');
-                        parentWindow.getWindowProperties().setTitleProvider(titleProvider)
-                    } else {
-                        log.info "can't find parent window for ${it.jSchShellTtyConnector.host}"
+    void checkSession(JptoSshJediTermWidget sshWidget){
+        if(sshWidget.jSchShellTtyConnector.initDone) {
+            if (!sshWidget.jSchShellTtyConnector.sessionDead) {
+                if (sshWidget.jSchShellTtyConnector.isConnected()) {
+                    if(SshSettings.sessionInactiveMonitor!=null){
+                        long now = System.currentTimeMillis()
+                        long diff = now -  sshWidget.jSchShellTtyConnector.lastWrittenDate
+                        if(diff> SshSettings.sessionInactiveMonitor.monitorTime){
+                            sshWidget.jSchShellTtyConnector.lastWrittenDate = now
+                            SshSettings.sessionInactiveMonitor.onSessionInactive(sshWidget)
+                        }
                     }
-                    it.jSchShellTtyConnector.sessionDead = true;
+                }else{
+                    log.info("session is dead ${sshWidget.jSchShellTtyConnector.host}")
+                    View parentWindow = JrrSwingUtilsParent.findParentWindow(sshWidget, View)
+                    if (parentWindow != null) {
+                        SwingUtilities.invokeLater {
+                            MyDockingWindowTitleProvider titleProvider = new MyDockingWindowTitleProvider(parentWindow.getTitle() + ' dead');
+                            parentWindow.getWindowProperties().setTitleProvider(titleProvider)
+                        }
+                    } else {
+                        log.info "can't find parent window for ${sshWidget.jSchShellTtyConnector.host}"
+                    }
+                    sshWidget.jSchShellTtyConnector.sessionDead = true;
                 }
             }
         }

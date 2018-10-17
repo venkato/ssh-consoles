@@ -4,7 +4,6 @@ import com.google.common.base.Predicate;
 import com.jediterm.terminal.ui.TerminalAction;
 import groovy.lang.Closure;
 import groovy.transform.CompileStatic;
-import net.sf.jremoterun.utilities.JrrUtilities;
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils;
 import net.sf.jremoterun.utilities.nonjdk.idwutils.Shortcuts;
 import org.apache.logging.log4j.LogManager;
@@ -64,7 +63,7 @@ public class JptoTerminalAction extends TerminalAction {
                     try {
                         return runnable.call(component);
                     } catch (Throwable e2) {
-                        JrrUtilities.showException("", e2);
+                        net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("", e2);
                         return false;
                     }
                 }

@@ -35,6 +35,11 @@ class JptoTtyConnector extends PtyMain.LoggingPtyProcessTtyConnector implements 
     }
 
     @Override
+    void write(byte[] bytes) throws IOException {
+        super.write(bytes)
+    }
+
+    @Override
     String toString() {
         return "JptoTtyConnector : ${cmd}"
     }
