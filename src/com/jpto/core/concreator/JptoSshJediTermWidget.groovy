@@ -13,14 +13,13 @@ import com.jediterm.terminal.ui.settings.SettingsProvider;
 @CompileStatic
 public class JptoSshJediTermWidget extends JptoCommonJediTermWidget {
 
-	private static final Logger logger = Logger.getLogger(JptoSshJediTermWidget);
-	private static final Logger log = logger;
 	
 	public JptoJSchShellTtyConnector jSchShellTtyConnector;
 
 	public JptoSshJediTermWidget(SettingsProvider settingsProvider, JptoJSchShellTtyConnector jSchShellTtyConnector) {
 		super(settingsProvider);
 		this.jSchShellTtyConnector = jSchShellTtyConnector;
+		jSchShellTtyConnector.jediSshWidget = this
 	}
 
 	@Override

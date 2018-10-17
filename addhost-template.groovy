@@ -6,7 +6,9 @@ import com.jpto.core.concreator.SshConSet
 import com.jpto.settings.SshSettings;
 import groovy.transform.CompileStatic
 import net.infonode.docking.View;
-import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaScriptHelper;
+import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaScriptHelper
+import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConSet2
+import net.sf.jremoterun.utilities.nonjdk.sshsup.SshPasswordReceiverI;
 
 @CompileStatic
 class AddHost extends RstaScriptHelper {
@@ -24,7 +26,17 @@ class AddHost extends RstaScriptHelper {
     void addSshConnection2(){
         SshConSet sshConSet = new SshConSet();
         sshConSet.host = "";
-        sshConSet.password = "pass";
+        sshConSet.passwordReceiver = new SshPasswordReceiverI() {
+            @Override
+            String readPassword(SshConSet2 sett) {
+                return 'myPassword'
+            }
+
+            @Override
+            boolean isPasswordSet() {
+                return true
+            }
+        };
         sshConSet.sshKey = "keyFile" as File;
         f.addHost(sshConSet)
     }
