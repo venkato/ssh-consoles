@@ -16,13 +16,16 @@ import io.github.dheid.fontchooser.FontDialog
 import net.infonode.docking.DockingWindow
 import net.infonode.docking.TabWindow
 import net.infonode.docking.View
-import net.sf.jremoterun.utilities.JrrUtilities
+import net.sf.jremoterun.utilities.JrrClassUtils
+import net.sf.jremoterun.utilities.NewValueListener
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwActions
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwMoveToNewTab
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwPopupMenuFactory
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwShortcuts
 import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils
+import net.sf.jremoterun.utilities.nonjdk.idwutils.IdwUtils2
 import net.sf.jremoterun.utilities.nonjdk.mucom.OpenFolderInMuCommander
+import net.sf.jremoterun.utilities.nonjdk.shellcommands.opennativeprog.EnvOpenSettings
 import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConSet2
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent
 import org.apache.logging.log4j.LogManager
@@ -42,12 +45,15 @@ import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.Frame
 import java.awt.Window
+import java.awt.datatransfer.StringSelection
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 
 @CompileStatic
 public class JptoTerminalActionProvider implements TerminalActionProvider {
-    private static final Logger log = LogManager.getLogger();
+//    private static final Logger log = LogManager.getLogger();
+    private static final java.util.logging.Logger log = JrrClassUtils.getJdkLogForCurrentClass();
+
 
     public TerminalActionProvider terminalActionProviderNext;
 
@@ -90,7 +96,7 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
                 parentTabWindow.addTab(createTerm);
                 dialog.dispose()
             } catch (Throwable e) {
-                JrrUtilities.showException("Failed add host", e)
+                net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("Failed add host", e)
             }
         }
 
@@ -123,8 +129,11 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         getActions3(actionsAuu3)
         getActions4(actionsAuu3)
         getActions5(actionsAuu3)
+        getActions6(actionsAuu3)
         getActionsOpenInMuCommander(actionsAuu3)
+        getActionsOpenSedTester(actionsAuu3)
         getChangeFont(actionsAuu3)
+        getActionsMethodInfo(actionsAuu3)
         return actionsAuu3
 
     }
@@ -220,8 +229,88 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     }
 
+    @Deprecated
     void getActions4(ArrayList<TerminalAction> actions) {
+        getActionsPassword(actions)
+    }
 
+    public static boolean pwdWriteNewLine = true
+    public static long pwdSleep2 = 1000
+    public static boolean writeFirstCharOfPasswordFirst = true
+
+    /**
+     * @see com.jpto.core.JptoCommonJediTermWidget#getTextInLastLineLater
+     */
+    void getActionsPassword(ArrayList<TerminalAction> actions) {
+
+
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.myPassword,
+                { Component input ->
+                    if (input == null) {
+                        log.error("input is null");
+                        return false;
+                    }
+                    onEnterMyPassword(input)
+                }));
+    }
+
+    boolean onEnterMyPassword(Component input){
+        JptoTerminalPanel component = (JptoTerminalPanel) input;
+        JediTermWidget jedi = component.getJediTermWidget();
+        TtyConnector ttyConnector = jedi.getTtyConnector();
+        if (SshConSet2.defaultPassword == null) {
+            throw new IllegalStateException("Password not set")
+        }
+        if(writeFirstCharOfPasswordFirst){
+            String password34 = SshConSet2.defaultPassword
+            String char1 = new String( password34 .charAt(0))
+            ttyConnector.write(char1);
+            Runnable r= {
+                Thread.sleep(pwdSleep2)
+                SwingUtilities.invokeLater{
+                    boolean isPwdVisible =isPasswordVisible(component,char1)
+                    if(isPwdVisible){
+                        log.info "not entering password as it is visible"
+                    }else {
+                        String pwdRest = password34.substring(1)
+                        ttyConnector.write(pwdRest)
+                        onAfterEnterRestOfPassword(component)
+                    }
+                }
+            }
+            Thread t = new Thread(r,'passw ender')
+            t.start()
+        }else {
+            ttyConnector.write(SshConSet2.defaultPassword);
+            onAfterEnterRestOfPassword(component)
+        }
+        return true;
+    }
+
+    void onAfterEnterRestOfPassword(JptoTerminalPanel component  ){
+        if(pwdWriteNewLine){
+            component.getJediTermWidget().getTtyConnector().write('\n')
+        }
+    }
+
+
+    boolean isPasswordVisible(JptoTerminalPanel term,String lasrSymbol){
+        TerminalPanel.TerminalCursor cursor = term.getTerminalCursor()
+        int cursor2 = cursor.getCoordY()
+        log.info "cursor = ${cursor2}"
+        TerminalTextBuffer buffer = term.getTerminalTextBuffer()
+        TerminalLine line1 = buffer.getLine(cursor2)
+        String text = line1.getText()
+        if(text.length()==0){
+            return false
+        }
+        if(text.endsWith(lasrSymbol)){
+            return true
+        }
+        return false
+    }
+
+    void getActions6(ArrayList<TerminalAction> actions) {
 
         actions.add(new JptoTerminalAction(IdwShortcuts.moveToDialog
                 , { Component input ->
@@ -253,27 +342,23 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
                         tp.invertStyle3();
                         return true;
                     } else {
-                        JrrUtilities.showException("Not inverted", new Exception("not inverted"))
+                        net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("Not inverted", new Exception("not inverted"))
                         return false
                     }
 
                 }));
-
-        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.myPassword,
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.copyAll,
                 { Component input ->
                     if (input == null) {
                         log.error("input is null");
                         return false;
                     }
                     JptoTerminalPanel component = (JptoTerminalPanel) input;
-                    JediTermWidget jedi = (JediTermWidget) component.getParent().getParent();
-                    TtyConnector ttyConnector = jedi.getTtyConnector();
-                    if (SshConSet2.defaultPassword == null) {
-                        throw new IllegalStateException("Password not set")
-                    }
-                    ttyConnector.write(SshConSet2.defaultPassword);
+                    String withHistory = component.getScreenWithHistory()
+                    component.createCopyPasteHandler().setContents(withHistory, true)
                     return true;
                 }));
+
 
     }
 
@@ -309,13 +394,20 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         if (OpenFolderInMuCommander.openFolderInMuCommander != null) {
             actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.openInMuCommander, { Component component ->
 
-                log.info "duplicated called ${component.class.name}"
+                //log.info "duplicated called ${component.class.name}"
                 if (component instanceof JptoTerminalPanel) {
                     Container parent = component.getParent().getParent()
                     JptoTerminalPanel term = (JptoTerminalPanel) component;
                     if (parent instanceof JptoSshJediTermWidget) {
                         JptoSshJediTermWidget sshWi = (JptoSshJediTermWidget) parent;
                         openInMu(term, sshWi)
+                        return true;
+                    }else if(parent instanceof JptoJediPtyTermWidget){
+                        if(EnvOpenSettings.defaultOpenFileHandler==null){
+                            throw new NullPointerException("defaultOpenFileHandler is null")
+                        }
+                        JptoJediPtyTermWidget jediPtyTermWidget = (JptoJediPtyTermWidget)parent
+                        openInMu2(term, jediPtyTermWidget)
                         return true;
                     }
                 }
@@ -325,9 +417,59 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     }
 
+    void getActionsOpenSedTester(ArrayList<TerminalAction> actions) {
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.sedView, { Component component ->
+
+            //log.info "duplicated called ${component.class.name}"
+            if (component instanceof JptoTerminalPanel) {
+                Container parent = component.getParent().getParent()
+                JptoTerminalPanel term = (JptoTerminalPanel) component;
+                //if (parent instanceof JptoSshJediTermWidget) {
+                openInSedViewer(term)
+                return true;
+                //}
+            }
+            return false;
+        }));
+
+    }
+
+    void getActionsMethodInfo(ArrayList<TerminalAction> actions) {
+        actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.methodInfo, { Component component ->
+
+            //log.info "duplicated called ${component.class.name}"
+            if (component instanceof JptoTerminalPanel) {
+                Container parent = component.getParent().getParent()
+                JptoTerminalPanel term = (JptoTerminalPanel) component;
+                //if (parent instanceof JptoSshJediTermWidget) {
+                openMethodInfo(term)
+                return true;
+                //}
+            }
+            return false;
+        }));
+
+    }
+
+    void openMethodInfo(JptoTerminalPanel term) {
+        //duplicateSshConsole(term, sshWi)
+
+        if (term.jptoMethodInfo == null ||term.jptoMethodInfo.view.getWindowParent()==null) {
+            TabWindow parentTabWindow = IdwUtils.getOppositeSplitTab(IdwUtils.getDockerWindowWithPopmenu(term));
+            term.jptoMethodInfo = new JptoMethodInfo(term)
+            parentTabWindow.addTab(term.jptoMethodInfo.view);
+        }else {
+            IdwUtils.setVisible(term.jptoMethodInfo.view)
+        }
+
+        term.jptoMethodInfo.buildAssist()
+
+
+    }
+
     void getChangeFont(ArrayList<TerminalAction> actions) {
         actions.add(new JptoTerminalAction(SshKeyStokesShortCuts.changeFont, { Component component ->
-            log.info "select font called ${component.class.name}"
+            log.info "select font called ${component.getClass().getName()}"
             if (component instanceof JptoTerminalPanel) {
                 Container parent = component.getParent().getParent()
                 JptoTerminalPanel term = (JptoTerminalPanel) component;
@@ -352,6 +494,18 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     }
 
+    void openInSedViewer(JptoTerminalPanel term) {
+        //duplicateSshConsole(term, sshWi)
+        TabWindow parentTabWindow = IdwUtils.getOppositeSplitTab(IdwUtils.getDockerWindowWithPopmenu(term));
+        SedViewer sedViewer = new SedViewer(term)
+        parentTabWindow.addTab(sedViewer.view);
+
+    }
+
+    void openInMu2(JptoTerminalPanel term, JptoJediPtyTermWidget sshWi) {
+        sendPwdCommand2(term, sshWi)
+    }
+
     void openInMu(JptoTerminalPanel term, JptoSshJediTermWidget sshWi) {
         sendPwdCommand(term, sshWi)
     }
@@ -360,10 +514,7 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
 
     void sendPwdCommand(JptoTerminalPanel term, JptoSshJediTermWidget sshWi) {
         TtyConnector ttyConnector = sshWi.getTtyConnector();
-        ttyConnector.write("pwd\n");
-//        TerminalLine line = term.getLastLine()
-//        assert line!=null
-//        String text = line.getText()
+        ttyConnector.write(pwdSsh);
         Runnable r = {
             Thread.sleep(pwdSleep)
             SwingUtilities.invokeLater {
@@ -372,10 +523,58 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         }
         Thread thread = new Thread(r, "pwd opener")
         thread.start()
-//        if(!text.endsWith('pwd')){
-//            throw new Exception("not ends with pwd")
-//        }
-//        ttyConnector.write("\n");
+    }
+
+    public static String pwdSsh ='pwd\n'
+    public static String pwdLocal ='pwd\r\n'
+
+    void sendPwdCommand2(JptoTerminalPanel term, JptoJediPtyTermWidget sshWi) {
+        TtyConnector ttyConnector = sshWi.getTtyConnector();
+        ttyConnector.write(pwdLocal);
+        Runnable r = {
+            Thread.sleep(pwdSleep)
+            SwingUtilities.invokeLater {
+                openPwd2(term, sshWi)
+            }
+        }
+        Thread thread = new Thread(r, "pwd opener")
+        thread.start()
+    }
+
+    File getSystemFile(String dir){
+        log.info "dir = ${dir}"
+        File dir4
+        if(dir.startsWith('/cygdrive/')){
+            String dirTmp
+            String vv = dir.substring('/cygdrive/'.length())
+            char first1 = vv.charAt(0)
+            if(vv.length()>2) {
+                String tail = vv.substring(1)
+                dirTmp = "${first1}:/${tail}"
+            }else{
+                dirTmp = "${first1}:/"
+            }
+            File tmpF = new File(dirTmp)
+            if(!tmpF.exists()){
+                throw new FileNotFoundException("${dirTmp} from ${dir}")
+            }
+            dir4=tmpF
+        }else{
+            dir4= new File(dir)
+        }
+        return dir4
+    }
+
+    void openPwd2(JptoTerminalPanel term, JptoJediPtyTermWidget sshWi) {
+
+        String dir = getPwd(term)
+        log.info "dir = ${dir}"
+        File dir4=getSystemFile(dir)
+        if(dir4.exists()) {
+            EnvOpenSettings.defaultOpenFileHandler.openFile(dir4);
+        }else{
+            throw new FileNotFoundException("${dir4}")
+        }
 
     }
 
@@ -395,12 +594,12 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
             throw new RuntimeException("bad cursor : " + cursor2)
         }
         TerminalLine n2 = textBuffer.getLine(cursor2 - 2)
+        TerminalLine n1 = textBuffer.getLine(cursor2 - 1)
+        String n1t = n1.getText()
 
         String n2t = n2.getText()
         log.info "n2t = ${n2t}"
         if (n2t.endsWith('pwd')) {
-            TerminalLine n1 = textBuffer.getLine(cursor2 - 1)
-            String n1t = n1.getText()
             log.info "n1t = ${n1t}"
             return n1t
         }
@@ -408,32 +607,13 @@ public class JptoTerminalActionProvider implements TerminalActionProvider {
         String n3t = n3.getText()
         log.info "n3t = ${n3t}"
         if (n3t.endsWith('pwd')) {
+            if(n2.isWrapped()){
+                n2t+=n1t
+            }
             return n2t
         }
         throw new Exception("not found ${n3t} , ${n2t} ")
     }
-
-//        for (int i = 1; i <= 9; i++) {
-//            final int newSelect = i - 1;
-//            actions.add(new JptoTerminalAction("Select " + i,
-//                    KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, InputEvent.CTRL_DOWN_MASK),
-//                    { Component input ->
-//                        TabWindow parentTabWindow = getParentIdwWindowSpecial3(input, TabWindow);
-//                        if (parentTabWindow == null) {
-//                            log.info("can't find parent tab ${input}");
-//                            return false;
-//                        }
-//                        TabbedPanel tabbedPanel = getTabbedPanel(parentTabWindow);
-//                        if (newSelect > tabbedPanel.getTabCount() - 1) {
-//                            log.info("up conner");
-//                            return false;
-//                        }
-//                        parentTabWindow.setSelectedTab(newSelect);
-//                        selectLastFocusedChild(parentTabWindow.getChildWindow(newSelect));
-//                        return true;
-//
-//                    }));
-//        }
 
 
     @Override
