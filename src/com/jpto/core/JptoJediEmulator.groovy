@@ -1,5 +1,6 @@
-package com.jpto.core;
+package com.jpto.core
 
+import com.google.common.base.Ascii;
 import com.jediterm.terminal.Terminal;
 import com.jediterm.terminal.TerminalDataStream;
 import com.jediterm.terminal.TerminalOutputStream;
@@ -7,7 +8,8 @@ import com.jediterm.terminal.TextStyle;
 import com.jediterm.terminal.emulator.JediEmulator;
 import com.jpto.settings.SshSettings;
 import groovy.transform.CompileStatic;
-import net.sf.jremoterun.utilities.JrrClassUtils;
+import net.sf.jremoterun.utilities.JrrClassUtils
+import net.sf.jremoterun.utilities.nonjdk.io.LastCharArrayOutputStream;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -22,9 +24,24 @@ public class JptoJediEmulator extends JediEmulator {
     String unsup2 = "\\";
     public volatile boolean enableAdoptToFixMsgs =SshSettings.enableAdoptToFixMsgs;
 
+
     public JptoJediEmulator(TerminalDataStream dataStream,  Terminal terminal) {
         super(dataStream, terminal);
     }
+
+
+    void onNewStr(char[] st,int len){
+        if(len>0){
+            String s = new String(st,0,len)
+            log.info "new s = ${s}"
+        }
+    }
+
+    void onNewLine(){
+
+    }
+
+
 
     @Override
     public void processChar(char ch, Terminal terminal) throws IOException {

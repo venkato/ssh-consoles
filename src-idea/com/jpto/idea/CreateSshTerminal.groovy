@@ -1,5 +1,6 @@
 package com.jpto.idea
 
+import groovy.transform.CompileStatic
 import com.intellij.execution.filters.ExceptionFilters
 import com.intellij.execution.filters.Filter
 import com.intellij.openapi.project.Project
@@ -11,12 +12,11 @@ import com.intellij.terminal.JBTerminalWidget
 import com.jediterm.terminal.ui.TerminalSession
 import com.jpto.core.concreator.JptoJSchShellTtyConnector
 import com.jpto.core.concreator.SshConSet
-import groovy.transform.CompileStatic
+
 import idea.plugins.thirdparty.filecompletion.share.JrrIdeaUtils
 import idea.plugins.thirdparty.filecompletion.share.OSIntegrationIdea
 import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtilsParent
-import org.jetbrains.plugins.terminal.JBTabbedTerminalWidget
 import org.jetbrains.plugins.terminal.TerminalToolWindowFactory
 import org.jetbrains.plugins.terminal.TerminalView
 
@@ -57,7 +57,6 @@ class CreateSshTerminal {
     static TerminalView getTerminalView() {
         Project project = OSIntegrationIdea.openedProject
         TerminalView terminalView = TerminalView.getInstance(project)
-//        ToolWindow toolWindow = ToolWindow.
         ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project)
         return terminalView
     }
@@ -71,7 +70,7 @@ class CreateSshTerminal {
     void run2() {
         Project project = OSIntegrationIdea.openedProject
         TerminalView terminalView = getTerminalView()
-        JBTabbedTerminalWidget myTerminalWidget = JrrClassUtils.getFieldValue(terminalView, "myTerminalWidget") as JBTabbedTerminalWidget
+        Object myTerminalWidget = JrrClassUtils.getFieldValue(terminalView, "myTerminalWidget")
 
         mySettings = new MyJBTerminalSystemSettingsProvider2();
         List<Filter> filters = ExceptionFilters.getFilters(GlobalSearchScope.allScope(project))
@@ -79,8 +78,8 @@ class CreateSshTerminal {
         connector = createConnector();
         session = wi.createTerminalSession(connector);
         session.start()
-        filters.each { wi.addMessageFilter(project, it) }
-        myTerminalWidget.addTab(tabName, wi)
+        filters.each { wi.addMessageFilter(it) }
+        JrrClassUtils.invokeJavaMethod2('addTab',tabName,wi)
         if (afterInit != null) {
             afterInit.run()
         }

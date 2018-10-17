@@ -23,13 +23,16 @@ enum SshKeyStokesShortCuts implements Shortcuts{
     changeColor("Change color", KeyStroke.getKeyStroke(KeyEvent.VK_F5, InputEvent.CTRL_DOWN_MASK)),
 
 
-    myPassword("My password", KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK)),
+    myPassword("My password", KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK)),
 
     translateFix("Translate fix", KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK )),
 
     openInMuCommander("open in mu commander", KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK )),
+    copyAll("copy all", null),
 
     changeFont("change font", null),
+    sedView("sed view", null),
+    methodInfo("method info", KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK )),
 
     ;
 

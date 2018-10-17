@@ -1,7 +1,6 @@
 package com.jpto.core.concreator
 
 import com.jcraft.jsch.Session
-import net.sf.jremoterun.utilities.nonjdk.sshsup.SftpUtils
 import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConSet3
 import groovy.transform.CompileStatic
 import net.sf.jremoterun.utilities.JrrClassUtils
@@ -26,12 +25,9 @@ class SshConSet extends SshConSet3 implements Closeable {
     }
 
     SshConSet clone2(){
-        SshConSet clone = new SshConSet()
-        clone.user = user;
-        clone.host = host;
-        clone.password = password;
-        clone.sshKey = sshKey;
-        return clone
+        SshConSet clone9 = new SshConSet()
+        cloneTo(clone9)
+        return clone9
     }
 
 
@@ -65,23 +61,26 @@ class SshConSet extends SshConSet3 implements Closeable {
     }
 
     JptoJSchShellTtyConnector createJcraftConnection() {
+        createJcraftConnection2(true)
+    }
+
+    JptoJSchShellTtyConnector createJcraftConnection2(boolean doIsConnectedCheck) {
         if (jcraftConn != null) {
             return jcraftConn;
         }
         if (sshKey != null) {
             assert sshKey.exists()
         } else {
-            assert password != null
+            if(passwordReceiver==null || !passwordReceiver.isPasswordSet()) {
+                throw new Exception("set password or public key")
+            }
         }
         assert host != null
         SshConSet thisObj = this;
         JptoJSchShellTtyConnector connector = new JptoJSchShellTtyConnector(thisObj);
         JptoAddHostPanel2.createTerminalImpl3(connector);
-        if (!connector.initDone) {
-            StackTraceElement[] trace = connector.connectingThread.getStackTrace()
-            trace.toList().each {println(it)}
-            log.info("Logon failed, for details change ssh log level : SshSettings.logLevel");
-            throw new Exception("Ssh connection failed to initialized");
+        if (doIsConnectedCheck&& !connector.initDone) {
+            connector.checkIfConnected()
         }
         jcraftConn = connector
         return connector

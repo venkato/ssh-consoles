@@ -1,6 +1,6 @@
 package com.jpto.core
 
-import com.jediterm.pty.PtyMain
+
 import com.jediterm.terminal.model.StyleState
 import com.jediterm.terminal.model.TerminalTextBuffer
 import com.jediterm.terminal.ui.JediTermWidget

@@ -9,19 +9,24 @@ import net.sf.jremoterun.utilities.JrrClassUtils
 import net.sf.jremoterun.utilities.nonjdk.InfocationFrameworkStructure
 import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaJavaEditor
 import net.sf.jremoterun.utilities.nonjdk.rstarunner.RstaRunnerWithStackTrace2
+import net.sf.jremoterun.utilities.nonjdk.shell.GroovySehllSshServiceSettings
 import net.sf.jremoterun.utilities.nonjdk.tcpmon.Tcpmon
 import net.sf.jremoterun.utilities.nonjdk.tcpmon.webclient.WebClient
 import net.sf.jremoterun.utilities.nonjdk.vncviewer.VncViewer
 import net.sf.jremoterun.utilities.nonjdk.weirdx.WeirdxDownloader
 import org.apache.commons.lang3.SystemUtils
+import org.apache.sshd.scp.server.ScpCommandFactory
 import org.apache.sshd.server.SshServer
 import org.apache.sshd.server.auth.password.PasswordAuthenticator
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
-import org.apache.sshd.server.scp.ScpCommandFactory
+//import org.apache.sshd.server.scp.ScpCommandFactory
 import org.apache.sshd.server.session.ServerSession
 import org.apache.sshd.server.shell.ProcessShellFactory
 
+import javax.swing.SwingUtilities
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.logging.Logger
 
 @CompileStatic
@@ -59,9 +64,12 @@ class AddHostFunctions {
     }
 
     View addHost(SshConSet sshConSet) {
-        JptoJSchShellTtyConnector connection = sshConSet.createJcraftConnection()
+        JptoJSchShellTtyConnector connection = sshConSet.createJcraftConnection2(false)
         View view = SshSettings.customFunctions.createTerminal2(connection)
-        JptoAddHostPanel.tabWindow.addTab(view)
+        SwingUtilities.invokeLater {
+            JptoAddHostPanel.tabWindow.addTab(view)
+        }
+        connection.checkIfConnected()
         return view
     }
 
@@ -93,11 +101,11 @@ class AddHostFunctions {
         VncViewer.run([])
     }
 
-    WebClient runWebClient(){
-        WebClient webClient = new WebClient(JptoAddHostPanel.tabWindow);
-        JptoAddHostPanel.tabWindow.addTab(webClient.infodockView);
-        return webClient;
-    }
+//    WebClient runWebClient(){
+//        WebClient webClient = new WebClient(JptoAddHostPanel.tabWindow);
+//        JptoAddHostPanel.tabWindow.addTab(webClient.infodockView);
+//        return webClient;
+//    }
 
 //    void runPortForward(Params params){
 ////        Params params = new Params(2221, "127.0.0.1", 2142);
@@ -109,12 +117,17 @@ class AddHostFunctions {
 //    }
 
     SshServer runSshServer(int port,List<String> shell){
+        GroovySehllSshServiceSettings.setSshProps()
         SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.port = port
         File hostKey = new File(SystemUtils.userHome, "jrr/hostkey.ser")
         hostKey.parentFile.mkdir()
         assert hostKey.parentFile.exists()
-        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey));
-        sshd.setShellFactory(new ProcessShellFactory(shell));
+        Path hostKeyP = Paths.get(hostKey.toURI())
+        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKeyP));
+//        String[] shell2 = shell.toArray(new String[0])
+        String remove1 = shell.remove(0)
+        sshd.setShellFactory(new ProcessShellFactory(remove1,shell));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setPasswordAuthenticator(new PasswordAuthenticator(){
             @Override

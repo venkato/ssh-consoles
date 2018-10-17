@@ -10,11 +10,13 @@ import com.jpto.settings.SshSettings
 import groovy.transform.CompileStatic
 import net.infonode.docking.DockingWindow
 import net.infonode.docking.View
-import net.sf.jremoterun.utilities.JrrClassUtils
-import net.sf.jremoterun.utilities.JrrUtilities
+import net.sf.jremoterun.utilities.JrrUtilitiesShowE
 import net.sf.jremoterun.utilities.nonjdk.downloadutils.LessDownloader
+import net.sf.jremoterun.utilities.nonjdk.sshsup.ConnectionState
+import net.sf.jremoterun.utilities.nonjdk.sshsup.JrrJschSession
+import net.sf.jremoterun.utilities.nonjdk.sshsup.JscpLogger
+import net.sf.jremoterun.utilities.nonjdk.sshsup.SshConnectionDetailsI
 import net.sf.jremoterun.utilities.nonjdk.swing.JrrSwingUtils
-import org.apache.commons.lang.StringUtils
 import org.apache.log4j.Logger
 
 import javax.swing.JPanel
@@ -43,7 +45,7 @@ public abstract class JptoCustomFunctions {
 
     }
 
-    public JptoJSchShellTtyConnector buildJSchShellTtyConnector(SshConSet host) {
+    public JptoJSchShellTtyConnector buildJSchShellTtyConnector(SshConnectionDetailsI host) {
         JptoJSchShellTtyConnector jSchShellTtyConnector = new JptoJSchShellTtyConnector(host);
         return jSchShellTtyConnector;
     }
@@ -54,10 +56,22 @@ public abstract class JptoCustomFunctions {
         return createTerminal(sshConSet)
     }
 
-    public View createTerminal(SshConSet host) throws Exception {
-        host.host = StringUtils.strip(host.host, "\t\r\n ");
+    public int dumpSessionParamsRotateCount = 9;
+    public File dumpSessionParamsDir;
+    public String dumpSshFileNameSuffix = '_jcraft.json'
+
+    public View createTerminal(SshConnectionDetailsI host) throws Exception {
+        //host.host = StringUtils.strip(host.host, "\t\r\n ");
         JptoJSchShellTtyConnector jSchShellTtyConnector = SshSettings.customFunctions.buildJSchShellTtyConnector(host);
         View terminal2 = createTerminal2(jSchShellTtyConnector)
+        if (dumpSessionParamsDir != null && jSchShellTtyConnector.sessionCatched != null) {
+            try {
+                jSchShellTtyConnector.sessionCatched.dumpMainParamsToFile(dumpSessionParamsDir, dumpSshFileNameSuffix, dumpSessionParamsRotateCount)
+            } catch (Exception e) {
+                log.warn("${host.host} failed dump params for", e)
+                JrrUtilitiesShowE.showException("${host.host} failed dump params for", e)
+            }
+        }
         JptoAddHostPanel.addHost(host.host)
         return terminal2
     }
@@ -81,39 +95,27 @@ public abstract class JptoCustomFunctions {
 
     View createTerminal2(JptoJSchShellTtyConnector jSchShellTtyConnector) throws Exception {
         JptoSshJediTermWidget jediTermWidget = JptoAddHostPanel.createTerminalImpl2(jSchShellTtyConnector, false);
-        if (jediTermWidget.jSchShellTtyConnector.initDone) {
+        boolean authOk = false;
+        Session session = jSchShellTtyConnector.getSession()
+        if (session instanceof JrrJschSession) {
+            JrrJschSession session3 = (JrrJschSession) session;
+            authOk = (session3.connectionState == ConnectionState.AuthPassed)
+        };
+
+        if (authOk && jediTermWidget.jSchShellTtyConnector.initDone) {
             Thread.sleep(500);
             SwingUtilities.invokeLater {
                 TerminalPanel terminalPanel = jediTermWidget.getTerminalPanel();
-                try {
-                    JrrClassUtils.invokeJavaMethod(terminalPanel, "clearBuffer");
-                } catch (Exception e) {
-                    log.warn(null, e);
-                    JrrUtilities.showException("e", e);
-                }
+                terminalPanel.clearBuffer()
+//                try {
+//                    JrrClassUtils.invokeJavaMethod(terminalPanel, "clearBuffer");
+//                } catch (Exception e) {
+//                    log.warn(null, e);
+//                    net.sf.jremoterun.utilities.JrrUtilitiesShowE.showException("e", e);
+//                }
             }
         }
-        View view = new View(deriveViewTitle(jSchShellTtyConnector), null, jediTermWidget) {
-            @Override
-            void requestFocus() {
-                JptoTerminalPanel terminalPanel = jediTermWidget.getJptoTerminalPanel();
-                if (terminalPanel == null) {
-
-                } else {
-                    terminalPanel.requestFocus();
-                }
-            }
-
-            @Override
-            boolean requestFocusInWindow() {
-                JptoTerminalPanel terminalPanel = jediTermWidget.getJptoTerminalPanel();
-                if (terminalPanel == null) {
-                    return null
-                }
-                return terminalPanel.requestFocusInWindow();
-
-            }
-        };
+        View view = new ViewJptoConnectionCreator(deriveViewTitle(jSchShellTtyConnector), null, jediTermWidget);
 //        jediTermWidget.addHyperlinkFilter(new HyperLinkFilter1())
         JrrSwingUtils.tranferFocus(view, jediTermWidget.terminalPanel)
         return view;
@@ -121,6 +123,11 @@ public abstract class JptoCustomFunctions {
 
     public View createPtyTerminal(File dir, List<String> cmd) throws Exception {
         createPtyTerminal(cmd[0], dir, cmd)
+    }
+
+
+    public View createPtyTerminalLogViewer(LogViewerI logViewerI) throws Exception {
+        createPtyTerminalLogViewer(logViewerI.name(), logViewerI.file);
     }
 
     public View createPtyTerminalLogViewer(String viewName, File logFile) throws Exception {
@@ -141,27 +148,7 @@ public abstract class JptoCustomFunctions {
     public View createPtyTerminal(String viewName, File dir, List<String> cmd) throws Exception {
 //        assert JptoCustomFunctions.classLoader == ClassLoader.getSystemClassLoader()
         JptoJediPtyTermWidget jediTermWidget = JptoAddHostPanel.createLocalTerminal(cmd, dir);
-        View view = new View(viewName, null, jediTermWidget) {
-            @Override
-            void requestFocus() {
-                JptoTerminalPanel terminalPanel = jediTermWidget.getJptoTerminalPanel();
-                if (terminalPanel == null) {
-
-                } else {
-                    terminalPanel.requestFocus();
-                }
-            }
-
-            @Override
-            boolean requestFocusInWindow() {
-                JptoTerminalPanel terminalPanel = jediTermWidget.getJptoTerminalPanel();
-                if (terminalPanel == null) {
-                    return null
-                }
-                return terminalPanel.requestFocusInWindow();
-
-            }
-        };
+        View view = new ViewJptoConnectionCreator(viewName, null, jediTermWidget);
         JrrSwingUtils.tranferFocus(view, jediTermWidget.terminalPanel)
         return view;
     }
@@ -170,5 +157,11 @@ public abstract class JptoCustomFunctions {
 
     void configureSshSession(Session session) {
 
+    }
+
+    SshConnectionDetailsI createSshConnectionFromSidePanel(String host1) {
+        SshConSet sshConSet=new SshConSet()
+        sshConSet.host = host1
+        return sshConSet
     }
 }
